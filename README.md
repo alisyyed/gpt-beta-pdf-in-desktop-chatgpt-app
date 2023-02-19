@@ -5,52 +5,88 @@ a script that combines everything together into a single file:-
 
 
 # Import required packages
+
 import os
+
 from dotenv import load_dotenv
+
 from PyPDF2 import PdfReader
+
 from langchain.embeddings.openai import OpenAIEmbeddings
+
 from langchain.text_splitter import CharacterTextSplitter
+
 from langchain.vectorstores import FAISS
+
 from langchain.llms import OpenAI
+
 from langchain.chains.question_answering import load_qa_chain
 
 # Load environment variables
 load_dotenv()
 
+
 # Download and extract text from PDF
+
 pdf_url = os.getenv('PDF_URL')
+
 os.system(f'wget -O ipc.pdf {pdf_url}')
+
 with open('ipc.pdf', 'rb') as f:
+
     reader = PdfReader(f)
+    
     raw_text = ''
+    
     for i, page in enumerate(reader.pages):
+    
         text = page.extract_text()
+        
         if text:
+        
             raw_text += text
+            
 
 # Split text into smaller chunks
+
 text_splitter = CharacterTextSplitter(
+
     separator="\n",
+    
     chunk_size=1000,
+    
     chunk_overlap=200,
+    
     length_function=len,
+  
 )
 texts = text_splitter.split_text(raw_text)
 
+
 # Generate embeddings for chunks
+
 embeddings = OpenAIEmbeddings()
+
 docsearch = FAISS.from_texts(texts, embeddings)
 
 # Load language model and question answering chain
+
 model = OpenAI(temperature=0.5)
+
 chain = load_qa_chain(model, chain_type='stuff')
 
 # Answer user's questions
+
 while True:
+
     question = input('Ask a question (or type "exit" to quit): ')
+    
     if question.lower() == 'exit':
+    
         break
+        
     docs = docsearch.similarity_search(question)
+    
     chain.run(input_documents=docs, question=question)
 
 
@@ -60,6 +96,7 @@ you can make a repository with this script alone. Once you have created a reposi
 
 
 python main.py
+
 This will prompt you to enter a question, and the script will use the IPC PDF to try and find an answer to your question. Make sure you have the necessary packages installed and have created the .env file with the PDF_URL variable set to the URL of the IPC PDF.
 
 The .env file is a configuration file that holds your environment variables. In the case of the code we wrote earlier, we used it to store the PDF URL that the script needs to access.
@@ -67,6 +104,7 @@ The .env file is a configuration file that holds your environment variables. In 
 When you create a .env file in the same directory as the script, the variables stored in it can be accessed by the script. In our case, we used the os module to read the PDF_URL variable from the .env file, like this:
 
 import os
+
 PDF_URL = os.getenv('PDF_URL')
 
 
